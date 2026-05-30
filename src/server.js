@@ -5,6 +5,8 @@ import resolvers from './graphql/resolvers/index.js';
 import typeDefs from './graphql/schema/index.js';
 import User from './models/user.js'; 
 import Incident from './models/incident.js';
+import PollingUnit from './models/pollingUnit.js';
+import Result from './models/result.js';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import jwt from "jsonwebtoken";
@@ -70,8 +72,9 @@ const server = new ApolloServer({
   
     
     return {
-      models: { User, Incident  }, // Pass models here
-      user,// If using authentication middleware
+      models: {
+  User, Incident, PollingUnit, Result,}, 
+      user,
     };
   }
 });
