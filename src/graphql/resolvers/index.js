@@ -31,7 +31,32 @@ const resolvers = {
 
       return await models.User.find();
     },
+ getStateUsers: async (_, __, { models }) => {
+  return await models.User.find({
+    role: "STATE_ICT_DIRECTOR"
+  });
+},
 
+getLGAUsers: async (_, __, { models }) => {
+  return await models.User.find({
+    role: "LGA_ICT_DIRECTOR"
+  });
+},
+getWardUsers: async (
+  _,
+  __,
+  { models, user }
+) => {
+  if (!user) {
+    throw new ForbiddenError("Access denied");
+  }
+
+  return await models.User.find({
+    role: "WARD_ICT_DIRECTOR",
+    state: user.state,
+    lga: user.lga
+  });
+},
     // =========================
     // GET ALL INCIDENTS
     // =========================
@@ -44,6 +69,64 @@ const resolvers = {
         "reportedBy"
       );
     },
+    candidateResults: async (_, __, { models, user }) => {
+  if (!user) {
+    throw new AuthenticationError("Unauthorized");
+  }
+
+  const results = await models.Result.aggregate([
+    {
+      $group: {
+        _id: "$candidate",
+        totalVotes: { $sum: "$votes" },
+      },
+    },
+    {
+      $sort: {
+        totalVotes: -1,
+      },
+    },
+  ]);
+
+  return results.map((r) => ({
+    candidate: r._id,
+    totalVotes: r.totalVotes,
+  }));
+},
+electionSummary: async (_, __, { models, user }) => {
+  if (!user) {
+    throw new AuthenticationError("Unauthorized");
+  }
+
+  const results = await models.Result.aggregate([
+    {
+      $group: {
+        _id: "$candidate",
+        totalVotes: { $sum: "$votes" }
+      }
+    },
+    {
+      $sort: {
+        totalVotes: -1
+      }
+    }
+  ]);
+
+  const winner =
+    results.length > 0 ? results[0]._id : null;
+
+  const winnerVotes =
+    results.length > 0 ? results[0].totalVotes : 0;
+
+  return {
+    winner,
+    totalVotes: winnerVotes,
+    results: results.map((r) => ({
+      candidate: r._id,
+      totalVotes: r.totalVotes
+    }))
+  };
+},
 
     // =========================
     // GET SINGLE INCIDENT
@@ -335,6 +418,111 @@ const resolvers = {
         { new: true }
       );
     },
+    createICTDirector: async (
+  _,
+  {
+    username,
+    password,
+    email,
+    full_name,
+    state,
+  },
+  { models, user }
+) => {
+  if (!user || user.role !== "ADMIN") {
+    throw new ForbiddenError(
+      "Only Admin can create ICT Directors"
+    );
+  }
+
+  const hashedPassword =
+    await argon2.hash(password);
+
+  return await models.User.create({
+    username,
+    email,
+    full_name,
+    password: hashedPassword,
+    role: "ICT_DIRECTOR",
+    state,
+    createdBy: user.id,
+  });
+},
+
+createLGADirector: async (
+  _,
+  {
+    username,
+    password,
+    email,
+    full_name,
+    lga,
+  },
+  { models, user }
+) => {
+  if (
+    !user ||
+    user.role !== "ICT_DIRECTOR"
+  ) {
+    throw new ForbiddenError(
+      "Only ICT Directors can create LGA Directors"
+    );
+  }
+
+  const hashedPassword =
+    await argon2.hash(password);
+
+  return await models.User.create({
+    username,
+    email,
+    full_name,
+    password: hashedPassword,
+    role: "LGA_ICT_DIRECTOR",
+
+    state: user.state,
+    lga,
+
+    createdBy: user.id,
+  });
+},
+createWardDirector: async (
+  _,
+  {
+    username,
+    password,
+    email,
+    full_name,
+    ward,
+  },
+  { models, user }
+) => {
+  if (
+    !user ||
+    user.role !== "LGA_ICT_DIRECTOR"
+  ) {
+    throw new ForbiddenError(
+      "Only LGA Directors can create Ward Directors"
+    );
+  }
+
+  const hashedPassword =
+    await argon2.hash(password);
+
+  return await models.User.create({
+    username,
+    email,
+    full_name,
+    password: hashedPassword,
+
+    role: "WARD_ICT_DIRECTOR",
+
+    state: user.state,
+    lga: user.lga,
+    ward,
+
+    createdBy: user.id,
+  });
+},
 
     // =========================
     // SUBMIT RESULT

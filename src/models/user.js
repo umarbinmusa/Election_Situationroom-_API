@@ -8,7 +8,10 @@ const userSchema = new mongoose.Schema(
       required: true,
     },
 
-    full_name: String,
+    full_name: {
+      type: String,
+      required: true,
+    },
 
     email: {
       type: String,
@@ -24,6 +27,9 @@ const userSchema = new mongoose.Schema(
       type: String,
       enum: [
         "ADMIN",
+        "ICT_DIRECTOR",
+        "LGA_ICT_DIRECTOR",
+        "WARD_ICT_DIRECTOR",
         "COORDINATOR",
         "OBSERVER",
         "SECURITY",
@@ -32,8 +38,33 @@ const userSchema = new mongoose.Schema(
       ],
       default: "OBSERVER",
     },
+
+    // Location hierarchy
+    state: {
+      type: String,
+      default: null,
+    },
+
+    lga: {
+      type: String,
+      default: null,
+    },
+
+    ward: {
+      type: String,
+      default: null,
+    },
+
+    // Who created this account
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+  }
 );
 
 export default mongoose.model("User", userSchema);

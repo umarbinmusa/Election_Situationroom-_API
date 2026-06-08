@@ -45,6 +45,17 @@ type Result {
   votes: Int!
   submittedBy: User
 }
+  type CandidateResult {
+  candidate: String!
+  totalVotes: Int!
+}
+  
+
+type ElectionSummary {
+  winner: String
+  totalVotes: Int
+  results: [CandidateResult!]!
+}
 
 type AuthPayload {
   token: String!
@@ -57,6 +68,11 @@ type Query {
   dashboardStats: DashboardStats
   getPollingUnits: [PollingUnit]
   getResults: [Result]
+  candidateResults: [CandidateResult!]!
+  electionSummary: ElectionSummary!
+   getStateUsers: [User]
+   getLGAUsers: [User]
+   getWardUsers: [User]
   
 }
 
@@ -73,6 +89,30 @@ type Mutation {
     username: String!
     password: String!
   ): AuthPayload
+
+  createICTDirector(
+    username: String!
+    password: String!
+    email: String
+    full_name: String!
+    state: String!
+  ): User
+
+   createLGADirector(
+    username: String!
+    password: String!
+    email: String
+    full_name: String!
+    lga: String!
+  ): User
+
+   createWardDirector(
+    username: String!
+    password: String!
+    email: String
+    full_name: String!
+    ward: String!
+  ): User
 
    createIncident(
       title: String!
