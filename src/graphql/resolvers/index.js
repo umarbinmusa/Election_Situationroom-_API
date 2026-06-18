@@ -33,7 +33,7 @@ const resolvers = {
     },
  getStateUsers: async (_, __, { models }) => {
   return await models.User.find({
-    role: "STATE_ICT_DIRECTOR"
+    role: "ICT_DIRECTOR"
   });
 },
 
@@ -92,6 +92,27 @@ getWardUsers: async (
     candidate: r._id,
     totalVotes: r.totalVotes,
   }));
+},
+getPollingUnitUsers: async (
+  _,
+  __,
+  { models, user }
+) => {
+  if (
+    !user ||
+    user.role !== "WARD_ICT_DIRECTOR"
+  ) {
+    throw new ForbiddenError(
+      "Access denied"
+    );
+  }
+
+  return await models.User.find({
+    role: "POLLING_UNIT_OFFICER",
+    state: user.state,
+    lga: user.lga,
+    ward: user.ward,
+  });
 },
 electionSummary: async (_, __, { models, user }) => {
   if (!user) {
@@ -460,31 +481,65 @@ createLGADirector: async (
   },
   { models, user }
 ) => {
-  if (
-    !user ||
-    user.role !== "ICT_DIRECTOR"
-  ) {
+  console.log("AUTH USER:", user);
+
+  if (!user || user.role !== "ICT_DIRECTOR") {
     throw new ForbiddenError(
       "Only ICT Directors can create LGA Directors"
     );
   }
 
+  // Get fresh ICT Director data from database
+  const currentUser = await models.User.findById(user.id);
+
+  console.log("CURRENT USER FROM DB:", currentUser);
+
+  if (!currentUser) {
+    throw new Error("ICT Director account not found");
+  }
+
+  if (!currentUser.state) {
+    throw new Error(
+      "ICT Director has no state assigned"
+    );
+  }
+
+  // Check username uniqueness
+  const existingUser =
+    await models.User.findOne({ username });
+
+  if (existingUser) {
+    throw new Error("Username already exists");
+  }
+
+  // Hash password
   const hashedPassword =
     await argon2.hash(password);
 
-  return await models.User.create({
-    username,
-    email,
-    full_name,
-    password: hashedPassword,
-    role: "LGA_ICT_DIRECTOR",
+  // Create LGA Director
+  const lgaDirector =
+    await models.User.create({
+      username,
+      email,
+      full_name,
+      password: hashedPassword,
 
-    state: user.state,
-    lga,
+      role: "LGA_ICT_DIRECTOR",
 
-    createdBy: user.id,
-  });
+      state: currentUser.state,
+      lga,
+
+      createdBy: currentUser._id,
+    });
+
+  console.log(
+    "CREATED LGA DIRECTOR:",
+    lgaDirector
+  );
+
+  return lgaDirector;
 },
+
 createWardDirector: async (
   _,
   {
@@ -523,8 +578,40 @@ createWardDirector: async (
     createdBy: user.id,
   });
 },
+createPollingUnitOfficer: async (
+  _,
+  args,
+  { models, user }
+) => {
+  try {
+    console.log("Logged in user:", user);
 
-    // =========================
+    const currentUser = await models.User.findById(user.id);
+    console.log("Current user from DB:", currentUser);
+
+    const hashedPassword = await argon2.hash(args.password);
+
+    const officer = await models.User.create({
+      username: args.username,
+      full_name: args.full_name,
+      email: args.email,
+      password: hashedPassword,
+      role: "POLLING_UNIT_OFFICER",
+      state: currentUser.state,
+      lga: currentUser.lga,
+      ward: currentUser.ward,
+      pollingUnit: args.pollingUnit,
+      createdBy: currentUser._id,
+    });
+
+    console.log("Created officer:", officer);
+
+    return officer;
+  } catch (error) {
+    console.error(error);
+    throw error;
+  }
+},    // =========================
     // SUBMIT RESULT
     // =========================
     submitResult: async (

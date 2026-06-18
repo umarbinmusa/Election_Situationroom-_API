@@ -8,9 +8,15 @@ export default gql`
 type User {
   id: ID!
   username: String!
+  full_name: String!
   email: String
-  full_name: String
   role: String!
+
+  state: String
+  lga: String
+  ward: String
+ pollingUnit: String
+  createdBy: User
 }
 
  type Incident {
@@ -73,6 +79,7 @@ type Query {
    getStateUsers: [User]
    getLGAUsers: [User]
    getWardUsers: [User]
+   getPollingUnitUsers: [User]
   
 }
 
@@ -96,7 +103,14 @@ type Mutation {
     email: String
     full_name: String!
     state: String!
-  ): User
+  ): User!
+   createPollingUnitOfficer(
+    username: String!
+    password: String!
+    full_name: String!
+    email: String
+    pollingUnit: String!
+  ): User!
 
    createLGADirector(
     username: String!

@@ -30,6 +30,7 @@ const userSchema = new mongoose.Schema(
         "ICT_DIRECTOR",
         "LGA_ICT_DIRECTOR",
         "WARD_ICT_DIRECTOR",
+        "POLLING_UNIT_OFFICER",
         "COORDINATOR",
         "OBSERVER",
         "SECURITY",
@@ -54,6 +55,10 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    pollingUnit: {
+  type: String,
+  default: null,
+},
 
     // Who created this account
     createdBy: {
