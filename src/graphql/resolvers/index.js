@@ -614,9 +614,9 @@ createPollingUnitOfficer: async (
 },    // =========================
     // SUBMIT RESULT
     // =========================
-    submitResult: async (
+ submitResult: async (
   _,
-  { pollingUnit, candidate, votes },
+  { pollingUnit, electionType, candidate, votes },
   { models, user }
 ) => {
   if (!user) {
@@ -624,16 +624,17 @@ createPollingUnitOfficer: async (
   }
 
   const result = await models.Result.create({
-  pollingUnit,
-  candidate,
-  votes,
-  submittedBy: user.id,
-});
+    pollingUnit,
+    electionType,
+    candidate,
+    votes,
+    submittedBy: user.id,
+  });
 
-return await models.Result.findById(result._id)
-  .populate("submittedBy");
-    },
-  },
+  return await models.Result.findById(result._id)
+    .populate("submittedBy");
+},
+ },
 };
 
 export default resolvers;

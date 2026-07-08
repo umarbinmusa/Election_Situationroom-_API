@@ -47,15 +47,35 @@ type PollingUnit {
 type Result {
   id: ID!
   pollingUnit: String!
-  candidate: String!
+  electionType: ElectionType!
+  candidate: Candidate!
   votes: Int!
-  submittedBy: User
+  submittedBy: User!
+  createdAt: String
+  updatedAt: String
 }
-  type CandidateResult {
+type CandidateResult {
   candidate: String!
   totalVotes: Int!
 }
-  
+  enum ElectionType {
+  PRESIDENTIAL
+  GOVERNORSHIP
+  SENATORIAL
+  HOUSE_OF_REPS
+  STATE_ASSEMBLY
+}
+  enum Candidate {
+  APC
+  PDP
+  LP
+  NNPP
+  SDP
+  ADC
+  YPP
+  AAC
+  APGA
+}
 
 type ElectionSummary {
   winner: String
@@ -155,11 +175,11 @@ type Mutation {
   ): PollingUnit
 
    submitResult(
-    pollingUnit: String!
-    candidate: String!
-    votes: Int!
-  ): Result
- 
+  pollingUnit: String!
+  electionType: ElectionType!
+  candidate: Candidate!
+  votes: Int!
+): Result!
   
 }
 `;
